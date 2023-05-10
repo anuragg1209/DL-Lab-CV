@@ -70,7 +70,7 @@ def main(args):
         raise ValueError
 
     # concatenate encoder and head/decoder
-    model = EncoderDecoder(encoder, decoder)
+    model = EncoderDecoder(encoder, decoder).cuda()
     model.eval()
 
     # optimization items
@@ -85,7 +85,7 @@ def main(args):
         ious = validate(model, val_loader)
         display_results(ious, val_dataset.classes)
 
-        logging.info(f"  max GPU memory allocated: {torch.max_memory_allocated()/1e6:.03f}M")
+        logging.info(f"  max GPU memory allocated: {torch.cuda.max_memory_allocated()/1e6:.03f}M")
         scheduler.step()
 
 
@@ -98,8 +98,8 @@ def train_epoch(model, data_loader, loss_function, optimizer):
         segm = sample['label']
 
         # forward pass
-        logits = model(img)
-        loss = loss_function(logits, segm)
+        logits = model(img.cuda())
+        loss = loss_function(logits, segm.cuda())
 
         # optimization
         optimizer.zero_grad()
@@ -122,7 +122,7 @@ def validate(model, data_loader):
         img = sample['image']
         segm = sample['label']
         with torch.no_grad():
-            logits = model(img).cpu()
+            logits = model(img.cuda()).cpu()
         preds.append(logits.argmax(1))
         gts.append(copy.deepcopy(segm))
 
